@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX 100
+#define MAX_EXPR_LEN 100
 
 // Structure for storing user details
 struct User
@@ -20,19 +20,19 @@ void addUser(void)
 
     if (filePtr == NULL)
     {
-        printf("Cannot open file\n");
+        printf("Cannot open the file\n");
         return;
     }
 
-    printf("Enter ID: ");
+    printf("Enter the ID: ");
     scanf("%d", &user.id);
     getchar();
 
-    printf("Enter Name: ");
+    printf("Enter the Name: ");
     fgets(user.name, sizeof(user.name), stdin);
     user.name[strcspn(user.name, "\n")] = '\0';
 
-    printf("Enter Age: ");
+    printf("Enter the Age: ");
     scanf("%d", &user.age);
 
     fprintf(filePtr, "%d %s %d\n", user.id, user.name, user.age);
@@ -181,7 +181,7 @@ int main(void)
         }
         else
         {
-            printf("Invalid\n");
+            printf("Invalid choice!!\n");
         }
     }
 
