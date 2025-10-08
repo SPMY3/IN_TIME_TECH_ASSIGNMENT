@@ -1,37 +1,32 @@
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
+#include<stdio.h>
+#include<string.h>
+#include<ctype.h>
 
-#define MAX 100
+#define MAX_EXPR_LEN 100
 
-// Remove spaces from the expression so we can parse it easily
+// Remove spaces from the expression
 void removeSpaces(char *expression)
 {
-    int i = 0;
-    int j = 0;
+    int readIndex=0;
+    int writeIndex=0;
 
-    while (expression[i])
+    while (expression[readIndex])
     {
-        if (expression[i] != ' ')
+        if (expression[readIndex] != ' ')
         {
-            expression[j++] = expression[i];
+            expression[writeIndex++] = expression[readIndex];
         }
-        i++;
+        readIndex++;
     }
-    expression[j] = '\0';
+    expression[readIndex]='\0';
 }
 
 // Check that the expression only has digits and valid operators
 int isValidExpression(const char *expression)
 {
-    int length = strlen(expression);
+    size_t length = strlen(expression);
 
     if (length == 0)
-    {
-        return 0;
-    }
-
-    if (!isdigit(expression[0]) && expression[0] != '-')
     {
         return 0;
     }
@@ -41,21 +36,27 @@ int isValidExpression(const char *expression)
         return 0;
     }
 
-    for (int i = 1; i < length; i++)
+    if (!isdigit(expression[0]))
     {
-        if (!isdigit(expression[i]) &&
-            expression[i] != '+' &&
-            expression[i] != '-' &&
-            expression[i] != '*' &&
-            expression[i] != '/')
+        return 0;
+    }
+
+    for(int position = 1; position < length; position++)
+    {
+        if (!isdigit(expression[position]) && !isdigit(expression[position-1]))
         {
             return 0;
         }
 
-        if (!isdigit(expression[i]) && !isdigit(expression[i - 1]))
+        if (!isdigit(expression[position]) &&
+            expression[position] != '+' &&
+            expression[position] != '-' &&
+            expression[position] != '*' &&
+            expression[position] != '/')
         {
             return 0;
         }
+
     }
     return 1;
 }
@@ -65,23 +66,23 @@ int parseExpression(const char *expression, int numbers[], char operators[])
 {
     int numberIndex = 0;
     int operatorIndex = 0;
-    int i = 0;
+    int position = 0;
 
-    while (expression[i])
+    while (expression[position])
     {
-        if (isdigit(expression[i]))
+        if (isdigit(expression[position]))
         {
             int value = 0;
-            while (isdigit(expression[i]))
+            while (isdigit(expression[position]))
             {
-                value = value * 10 + (expression[i] - '0');
-                i++;
+                value = value * 10 + (expression[position] - '0');
+                position++;
             }
             numbers[numberIndex++] = value;
         }
         else
         {
-            operators[operatorIndex++] = expression[i++];
+            operators[operatorIndex++] = expression[position++];
         }
     }
 
@@ -89,48 +90,48 @@ int parseExpression(const char *expression, int numbers[], char operators[])
     return numberIndex;
 }
 
-// Handle * and / first before + and -
+// Handle * and / first
 int handleMulDiv(int numbers[], char operators[], int count, int *updatedCount)
 {
-    int tempNumbers[MAX];
-    char tempOperators[MAX];
+    int tempNumbers[MAX_EXPR_LEN];
+    char tempOperators[MAX_EXPR_LEN];
     int numberIndex = 0;
     int operatorIndex = 0;
 
     tempNumbers[numberIndex++] = numbers[0];
 
-    for (int i = 0; operators[i]; i++)
+    for (int position=0; operators[position]; position++)
     {
-        if (operators[i] == '*')
+        if (operators[position] == '*')
         {
-            tempNumbers[numberIndex - 1] *= numbers[i + 1];
+            tempNumbers[numberIndex - 1] *= numbers[position + 1];
         }
-        else if (operators[i] == '/')
+        else if (operators[position] == '/')
         {
-            if (numbers[i + 1] == 0)
+            if(numbers[position + 1] == 0)
             {
                 printf("Error: Division by zero\n");
                 return 0;
             }
-            tempNumbers[numberIndex - 1] /= numbers[i + 1];
+            tempNumbers[numberIndex - 1] /= numbers[position + 1];
         }
+
         else
         {
-            tempOperators[operatorIndex++] = operators[i];
-            tempNumbers[numberIndex++] = numbers[i + 1];
+            tempOperators[operatorIndex++] = operators[position];
+            tempNumbers[numberIndex++]=numbers[position+1];
         }
     }
-
     tempOperators[operatorIndex] = '\0';
 
-    for (int i = 0; i < numberIndex; i++)
+    for (int position = 0; position < operatorIndex; position++)
     {
-        numbers[i] = tempNumbers[i];
+        operators[position] = tempOperators[position];    
     }
 
-    for (int i = 0; i < operatorIndex; i++)
+    for (int position = 0; position < numberIndex; position++)
     {
-        operators[i] = tempOperators[i];
+        numbers[position] = tempNumbers[position];
     }
 
     operators[operatorIndex] = '\0';
@@ -142,39 +143,38 @@ int handleMulDiv(int numbers[], char operators[], int count, int *updatedCount)
 int handleAddSub(const int numbers[], const char operators[], int count)
 {
     int result = numbers[0];
-    for (int i = 0; operators[i]; i++)
+    for (int position = 0; operators[position]; position++)
     {
-        result = (operators[i] == '+') ? result + numbers[i + 1] : result - numbers[i + 1];
+        result = (operators[position] == '+') ? result + numbers[position + 1] : result - numbers[position + 1];
     }
     return result;
 }
 
 int main(void)
 {
-    char expression[MAX];
-    int numbers[MAX];
+    char expression[MAX_EXPR_LEN];
+    int numbers[MAX_EXPR_LEN];
+    char operators[MAX_EXPR_LEN];
     int updatedCount;
-    char operators[MAX];
-
+    
     printf("Enter expression: ");
-    fgets(expression, MAX, stdin);
+    fgets(expression, MAX_EXPR_LEN, stdin);
     expression[strcspn(expression, "\n")] = '\0';
 
     removeSpaces(expression);
 
-    if (!isValidExpression(expression))
+    if(!isValidExpression(expression))
     {
-        printf("Error: Invalid expression\n");
+        printf("Invalid expression\n");
         return 0;
     }
 
     int count = parseExpression(expression, numbers, operators);
 
-    if (!handleMulDiv(numbers, operators, count, &updatedCount))
+    if(!handleMulDiv(numbers, operators, count, &updatedCount))
     {
         return 0;
     }
-
     printf("%d\n", handleAddSub(numbers, operators, updatedCount));
     return 0;
 }
