@@ -21,19 +21,19 @@ void generateRandomMatrix(int *matrix, int size)
 // rotate the matrix 90' clockwise
 void rotateMatrix(int *matrix, int size)
 {
-    for(int layer=0;layer<size/2;layer++)
+    for(int layer=0; layer < size/2; layer++)
     {
         int first=layer;
         int last=size-1-layer;
 
-        for(int i=first;i<last;i++)
+        for(int index = first; index < last; index++)
         {
-            int offset=i-first;
+            int offset=index-first;
 
-            int *top = matrix + first * size + i;
+            int *top = matrix + first * size + index;
             int *left = matrix + (last - offset) * size + first;
             int *bottom = matrix + last * size + (last - offset);
-            int *right = matrix + i * size + last;
+            int *right = matrix + index * size + last;
 
             int temp=*top;
             *top=*left;
@@ -50,43 +50,43 @@ void smoothingFilter(int *matrix, int size)
 {
     int tempRow[MAX];
 
-    for(int i=0;i<size;i++)
+    for(int row = 0; row < size; row++)
     {
-        for(int j=0;j<size;j++)
+        for(int col = 0; col < size; col++)
         {
 
-            int sum=0;
-            int count=0;
+            int sum = 0;
+            int count = 0;
 
-            for(int di=-1;di<=1;di++)
+            for(int rowOffset = -1; rowOffset <= 1; rowOffset++)
             {
-                for(int dj=-1;dj<=1;dj++)
+                for(int colOffset = -1; colOffset <= 1; colOffset++)
                 {
-                    int ni=i+di;
-                    int nj=j+dj;
-                    if(ni >= 0 && ni < size && nj >= 0 && nj < size)
+                    int neighborRow = row + rowOffset;
+                    int neighborCol = col + colOffset;
+                    if(neighborRow >= 0 && neighborRow < size && neighborCol >= 0 && neighborCol < size)
                     {
-                        sum += *(matrix + ni * size + nj);
+                        sum += *(matrix + neighborRow * size + neighborCol);
                         count++;
                     }
                 }
             }
-            tempRow[j] = sum / count;
+            tempRow[col] = sum / count;
         }
-        for(int j=0; j<size; j++)
+        for(int index = 0;index < size; index++)
         {
-            *(matrix + i * size + j) = tempRow[j];
+            *(matrix + row * size + index) = tempRow[index];
         }
     }
 }
 
 //print the matrix    
-void printMatrix(int *matrix, int n) {
-    for (int i = 0; i < n; i++)
+void printMatrix(int *matrix, int size) {
+    for (int row = 0; row < size; row++)
     {
-        for (int j = 0; j < n; j++)
+        for (int col = 0; col < size; col++)
         {
-            printf("%4d", *(matrix + i * n + j));
+            printf("%4d", *(matrix + row * size + col));
         }
         printf("\n");
     }
