@@ -2,16 +2,16 @@
 #include <stdlib.h>
 
 // Function to rotate an array left by 'd' positions 
-int* rotateLeft(int d, int arr_count, int* arr, int* result_count) 
+int* rotateLeft(int d, int array_count, int* array, int* result_count) 
 {
-    *result_count = arr_count;
-    int* result = (int*)malloc(arr_count * sizeof(int));
+    *result_count = array_count;
+    int* result = (int*)malloc(array_count * sizeof(int));
 
-    d = d % arr_count; 
+    d = d % array_count; 
 
-    for (int index = 0; index < arr_count; index++)
+    for (int index = 0; index < array_count; index++)
     {
-        *(result + index) = *(arr + ((index + d) % arr_count));
+        *(result + index) = *(array + ((index + d) % array_count));
     }
 
     return result;
@@ -27,16 +27,16 @@ int main()
     printf("Enter number of left rotations: ");
     scanf("%d", &d);
 
-    int* arr = (int*)malloc(size * sizeof(int));
+    int* array = (int*)malloc(size * sizeof(int));
 
     printf("Enter %d elements:\n", size);
     for (int index = 0; index < size; index++)
     {
-        scanf("%d", arr + index);
+        scanf("%d", array + index);
     }
 
     int result_count;
-    int* result = rotateLeft(d, size, arr, &result_count);
+    int* result = rotateLeft(d, size, array, &result_count);
 
     printf("\nArray after %d left rotations:\n", d);
     for (int index = 0; index < result_count; index++)
@@ -46,7 +46,7 @@ int main()
 
     printf("\n");
 
-    free(arr);
+    free(array);
     free(result);
 
     return 0;
