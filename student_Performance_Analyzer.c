@@ -28,7 +28,7 @@ void calculateTotalMarks(Student *studentPtr)
 //computes average of 3 subjects
 void calculateAverageMarks(Student *studentPtr)
 {
-    studentPtr->averageMarks=studentPtr->totalMarks/(double)SUBJECTS;
+    studentPtr->averageMarks=(double)studentPtr->totalMarks/SUBJECTS;
 }
 
 // computes grade based on average
@@ -97,7 +97,40 @@ void printRollNumbers(Student students[], int studentNumber, int index)
     printRollNumbers(students, studentNumber, index+1);
 }
 
+//Function to take student input
+void inputStudents(Student students[], int studentNumber) {
+    for (int i = 0; i < studentNumber; i++) {
+        scanf("%d %s", &students[i].rollNo, students[i].name);
+        // Using a loop makes it easy to handle any number of subjects
+        // without changing the code for each subject individually
+        for (int j = 0; j < SUBJECTS; j++) {
+            scanf("%d", &students[i].marks[j]);
+        }
+        calculateTotalMarks(&students[i]);
+        calculateAverageMarks(&students[i]);
+        generateGrade(&students[i]);
+    }
+}
 
+//Function to display student output
+void displayStudents(Student students[], int studentNumber) {
+    for (int i = 0; i < studentNumber; i++) {
+        printf("Roll: %d\n", students[i].rollNo);
+        printf("Name: %s\n", students[i].name);
+        printf("Total: %d\n", students[i].totalMarks);
+        printf("Average: %.2lf\n", students[i].averageMarks);
+        printf("Grade: %c\n", gradeToChar(students[i].grade));
+
+        if (students[i].averageMarks < 35) {
+            printf("\n");
+            continue;
+        }
+        printPerformance(students[i].grade);
+    }
+    printf("List of Roll Numbers (via recursion): ");
+    printRollNumbers(students, studentNumber, 0);
+    printf("\n");
+}
 int main()
 {
     int studentNumber=0;
@@ -105,40 +138,7 @@ int main()
 
     Student students[100];
 
-    for(int studentIndex = 0; studentIndex < studentNumber; studentIndex++)
-    {
-        scanf("%d %s", &students[studentIndex].rollNo,students[studentIndex].name);
-        
-        // Using a loop makes it easy to handle any number of subjects
-        // without changing the code for each subject individually
-        for(int subjectIndex = 0; subjectIndex < SUBJECTS; subjectIndex++)
-        {
-            scanf("%d",&students[studentIndex].marks[subjectIndex]);
-        }
-
-        calculateTotalMarks(&students[studentIndex]);
-        calculateAverageMarks(&students[studentIndex]);
-        generateGrade(&students[studentIndex]);
-
-    }
-    for(int studentIndex = 0; studentIndex < studentNumber; studentIndex++)
-    {
-        printf("Roll: %d\n", students[studentIndex].rollNo);
-        printf("Name: %s\n", students[studentIndex].name);
-        printf("Total: %d\n", students[studentIndex].totalMarks);
-        printf("Average: %.2lf\n", students[studentIndex].averageMarks);
-        printf("Grade: %c\n", gradeToChar(students[studentIndex].grade));
-
-        if (students[studentIndex].averageMarks < 35) 
-        {
-            printf("\n");
-            continue;
-        }
-
-        printPerformance(students[studentIndex].grade);        
-    }
-    printf("List of Roll Number (via recursion): ");
-    printRollNumbers(students, studentNumber, 0);
-    printf("\n");
+    inputStudents(students, studentNumber);
+    displayStudents(students, studentNumber);
     return 0;
 }
