@@ -67,9 +67,11 @@ static void append_free_block_to_tail(int blockIndex)
     newFreeBlock->blockIndex = blockIndex;
     newFreeBlock->next = NULL;
     newFreeBlock->prev = freeBlockTail;
-    if (freeBlockTail) freeBlockTail->next = newFreeBlock;
+    if (freeBlockTail) 
+        freeBlockTail->next = newFreeBlock;
     freeBlockTail = newFreeBlock;
-    if (!freeBlockHead) freeBlockHead = newFreeBlock;
+    if (!freeBlockHead) 
+        freeBlockHead = newFreeBlock;
     totalFreeBlocks++;
 }
 
@@ -217,7 +219,7 @@ static void free_filernode_memory(FileNode *node)
     free(node);
 }
 
-// disk operations for files (reading/freeing/writing append) 
+// Calculates how many blocks are needed for a given file size.
 static int compute_blocks_needed(int byteCount) 
 {
     if (byteCount <= 0) 
