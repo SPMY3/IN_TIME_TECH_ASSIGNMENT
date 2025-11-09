@@ -258,10 +258,11 @@ static void read_file_and_print(FileNode *fileNode)
         printf("(empty)\n");
         return;
     }
+
     int bytesRemaining = fileNode->fileSizeBytes;
-    for (int blockIndex = 0; blockIndex < fileNode->blocksAllocated && bytesRemaining > 0; ++blockIndex) 
+    for (int index = 0; index < fileNode->blocksAllocated && bytesRemaining > 0; ++index) 
     {
-        int blockIndex = fileNode->blockPointers[blockIndex];
+        int blockIndex = fileNode->blockPointers[index];
         int bytesToRead = (bytesRemaining < BLOCK_SIZE) ? bytesRemaining : BLOCK_SIZE;
         fwrite(virtualDisk[blockIndex], 1, bytesToRead, stdout);
         bytesRemaining -= bytesToRead;
@@ -597,6 +598,8 @@ static void cmd_df()
     printf("Used Blocks: %d\n", usedBlocks);
     printf("Free Blocks: %d\n", totalFreeBlocks);
     printf("Disk Usage: %.2f%%\n", diskUsagePercent);
+    printf("\n");
+
 }
 
 // cleanup utilities - free file tree and free-list 
