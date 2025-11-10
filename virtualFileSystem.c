@@ -9,6 +9,8 @@
 #define MAX_BLOCKS_PER_FILE NUM_BLOCKS
 #define INPUT_BUFFER_SIZE 2048
 #define MAX_DEPTH 1024
+#define MAX_CHILDREN 4096
+#define MAX_TOKENS 6
 
 //virtual disk 
 static unsigned char virtualDisk[NUM_BLOCKS][BLOCK_SIZE];
@@ -611,13 +613,13 @@ static void free_all_filernodes_recursive(FileNode *directoryNode)
     {
         FileNode *headChild = directoryNode->childHead;
         FileNode *walker = headChild;
-        FileNode *childrenList[4096];
+        FileNode *childrenList[MAX_CHILDREN];
         int childCount = 0;
         do 
         {
             childrenList[childCount++] = walker;
             walker = walker->siblingNext;
-            if (childCount >= 4096) 
+            if (childCount >= MAX_CHILDREN) 
                 break;
         } while (walker != headChild);
         for (int index = 0; index < childCount; ++index) 
@@ -645,13 +647,13 @@ static void cleanup_and_exit()
         {
             FileNode *headChild = rootDirectory->childHead;
             FileNode *walker = headChild;
-            FileNode *childrenList[4096];
+            FileNode *childrenList[MAX_CHILDREN];
             int childCount = 0;
             do 
             {
                 childrenList[childCount++] = walker;
                 walker = walker->siblingNext;
-                if (childCount >= 4096) 
+                if (childCount >= MAX_CHILDREN) 
                     break;
             } while (walker != headChild);
             for (int index = 0; index < childCount; ++index) 
@@ -768,8 +770,8 @@ int main()
         trim_whitespace(inputLine);
         if (strlen(inputLine) == 0) continue;
 
-        char *tokens[6];
-        int tokenCount = tokenize_command(inputLine, tokens, 6);
+        char *tokens[MAX_TOKENS];
+        int tokenCount = tokenize_command(inputLine, tokens, MAX_TOKENS);
         if (tokenCount == 0) continue;
 
         char *command = tokens[0];
