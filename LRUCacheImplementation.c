@@ -1,256 +1,442 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define MAX 1000
+#include <ctype.h>
+#include <stdio.h>
 
-typedef struct Node
+#define MAX_HASH_SIZE 1000
+
+typedef struct DoublyLinkedNode
 {
     int key;
     char data[100];
-    struct Node* prev;
-    struct Node* next;
-}Node;
+    struct DoublyLinkedNode* previous;
+    struct DoublyLinkedNode* next;
+} DoublyLinkedNode;
 
-typedef struct Queue
+typedef struct DoublyLinkedQueue
 {
-    Node* head;
-    Node* last;
-    int size;
-}Queue;
+    DoublyLinkedNode* head;
+    DoublyLinkedNode* tail;
+    int currentSize;
+} DoublyLinkedQueue;
 
-// Create and initializes an empty doubly-linked list (queue).
-Queue* createList()
+typedef struct HashTableNode
 {
-    Queue* queue=(Queue*)malloc(sizeof(Queue));
-    if(!queue)
+    int key;
+    DoublyLinkedNode* linkedListNode;
+    struct HashTableNode* next;
+} HashTableNode;
+
+HashTableNode* hashTable[MAX_HASH_SIZE];
+
+int cacheMaximumCapacity = 0;
+int cacheCurrentSize = 0;
+DoublyLinkedQueue* cacheQueue = NULL;
+
+//helper functions
+int getHashIndex(int key)
+{
+    return key % MAX_HASH_SIZE;
+}
+
+void clearInputBuffer()
+{
+    int characterRead;
+    while ((characterRead = getchar()) != '\n' && characterRead != EOF);
+}
+
+// Queue and Node Creation 
+DoublyLinkedQueue* createQueue()
+{
+    DoublyLinkedQueue* newQueue = (DoublyLinkedQueue*)malloc(sizeof(DoublyLinkedQueue));
+
+    if (!newQueue)
     {
         printf("Memory allocation failed!");
         exit(1);
     }
-    queue->head=NULL;
-    queue->last=NULL;
-    queue->size=0;
-    return queue;
-}
-Queue* cacheQueue=NULL;
-Node* hashtable[MAX];
-int cacheCapacity=0;
-int cacheSize=0;
 
-// Allocates and initializes a new node with key and data.
-Node* createNode(int key,const char* data)
+    newQueue->head = NULL;
+    newQueue->tail = NULL;
+    newQueue->currentSize = 0;
+    return newQueue;
+}
+
+DoublyLinkedNode* createDoublyLinkedNode(int key, const char* data)
 {
-    Node* node=(Node*)malloc(sizeof(Node));
-    if(!node)
+    DoublyLinkedNode* newNode = (DoublyLinkedNode*)malloc(sizeof(DoublyLinkedNode));
+    if (!newNode)
     {
         printf("Memory allocation failed!");
         exit(1);
     }
-    node->key=key;
-    strncpy(node->data,data,sizeof(node->data)-1);
-    node->data[sizeof(node->data)-1]='\0';
-    node->prev=NULL;
-    node->next=NULL;
-    return node;
+
+    newNode->key = key;
+    strncpy(newNode->data, data, sizeof(newNode->data) - 1);
+    newNode->data[sizeof(newNode->data) - 1] = '\0';
+    newNode->previous = NULL;
+    newNode->next = NULL;
+
+    return newNode;
 }
 
-// Initializes the LRU cache with given capacity and clears the hash table.
-void createCache(int capacity)
+//Hash Table Operations
+void insertIntoHashTable(int key, DoublyLinkedNode* node)
 {
-    cacheQueue=createList();
-    cacheCapacity=capacity;
-    cacheSize=0;
-    for(int index = 0; index < MAX; index++)
+    int index = getHashIndex(key);
+    HashTableNode* currentNode = hashTable[index];
+
+    while (currentNode != NULL)
     {
-        hashtable[index]=NULL;
+        if (currentNode->key == key)
+        {
+            currentNode->linkedListNode = node;
+            return;
+        }
+        currentNode = currentNode->next;
+    }
+
+    HashTableNode* newHashNode = (HashTableNode*)malloc(sizeof(HashTableNode));
+    newHashNode->key = key;
+    newHashNode->linkedListNode = node;
+    newHashNode->next = hashTable[index];
+    hashTable[index] = newHashNode;
+}
+
+DoublyLinkedNode* getFromHashTable(int key)
+{
+    int index = getHashIndex(key);
+    HashTableNode* currentNode = hashTable[index];
+
+    while (currentNode != NULL)
+    {
+        if (currentNode->key == key)
+        {
+            return currentNode->linkedListNode;
+        }
+        currentNode = currentNode->next;
+    }
+    return NULL;
+}
+
+void deleteFromHashTable(int key)
+{
+    int index = getHashIndex(key);
+    HashTableNode* currentNode = hashTable[index];
+    HashTableNode* previousNode = NULL;
+
+    while (currentNode != NULL)
+    {
+        if (currentNode->key == key)
+        {
+            if (previousNode == NULL)
+            {
+                hashTable[index] = currentNode->next;
+            }
+            else
+            {
+                previousNode->next = currentNode->next;
+            }
+            free(currentNode);
+            return;
+        }
+        previousNode = currentNode;
+        currentNode = currentNode->next;
     }
 }
 
-// Inserts a node at the head of the queue (most recently used).
-void addNode(Queue* queue,Node* node)
+//Queue Operations for LRU Cache
+void addNodeToFront(DoublyLinkedQueue* queue, DoublyLinkedNode* node)
 {
-    node->prev=NULL;
-    node->next=queue->head;
-    if(queue->head!=NULL)
+    node->previous = NULL;
+    node->next = queue->head;
+
+    if (queue->head != NULL)
     {
-        queue->head->prev=node;
+        queue->head->previous = node;
     }
-    queue->head=node;
-    if(queue->last==NULL)
+
+    queue->head = node;
+
+    if (queue->tail == NULL)
     {
-        queue->last=node;
+        queue->tail = node;
     }
-    queue->size++;
+
+    queue->currentSize++;
 }
 
-// Removes a specific node from the queue.
-void removeNode(Queue* queue,Node* node)
+void removeNodeFromQueue(DoublyLinkedQueue* queue, DoublyLinkedNode* node)
 {
-    if(node->prev!=NULL)
+    if (node->previous != NULL)
     {
-        node->prev->next=node->next;
+        node->previous->next = node->next;
     }
     else
     {
-        queue->head=node->next;
-    }    
-    if(node->next!=NULL)
+        queue->head = node->next;
+    }
+
+    if (node->next != NULL)
     {
-        node->next->prev=node->prev;
+        node->next->previous = node->previous;
     }
     else
     {
-        queue->last=node->prev;
+        queue->tail = node->previous;
     }
-    node->next=NULL;
-    node->prev=NULL;
-    queue->size--;
+
+    node->next = NULL;
+    node->previous = NULL;
+    queue->currentSize--;
 }
 
-// Removes and returns the last node (least recently used).
-Node* removeLast(Queue* queue)
+DoublyLinkedNode* removeLastNode(DoublyLinkedQueue* queue)
 {
-    if(queue->last==NULL)
+    if (queue->tail == NULL)
     {
         return NULL;
     }
-    Node* node=queue->last;
-    queue->last=node->prev;
-    if(queue->last!=NULL)
+
+    DoublyLinkedNode* lastNode = queue->tail;
+    queue->tail = lastNode->previous;
+
+    if (queue->tail != NULL)
     {
-        queue->last->next=NULL;
-    }    
+        queue->tail->next = NULL;
+    }
     else
     {
-        queue->head=NULL;
-    }    
-    node->prev=NULL;
-    node->next=NULL;
-    queue->size--;
-    return node;
+        queue->head = NULL;
+    }
+
+    lastNode->previous = NULL;
+    queue->currentSize--;
+
+    return lastNode;
 }
 
-// Adds/updates a cache entry and maintains LRU order with eviction.
-void put(int key,const char* data)
+//LRU Cache Operations
+void initializeCache(int capacity)
 {
-    if(hashtable[key]!=NULL)
-    {
-        Node* node=hashtable[key];
-        strncpy(node->data,data,sizeof(node->data)-1);
-        node->data[sizeof(node->data)-1]='\0';
+    cacheQueue = createQueue();
+    cacheMaximumCapacity = capacity;
+    cacheCurrentSize = 0;
 
-        removeNode(cacheQueue,node);
-        addNode(cacheQueue,node);
+    for (int index = 0; index < MAX_HASH_SIZE; index++)
+    {
+        hashTable[index] = NULL;
+    }
+}
+
+void putIntoCache(int key, const char* data)
+{
+    DoublyLinkedNode* existingNode = getFromHashTable(key);
+
+    if (existingNode != NULL)
+    {
+        strncpy(existingNode->data, data, sizeof(existingNode->data) - 1);
+        existingNode->data[sizeof(existingNode->data) - 1] = '\0';
+
+        removeNodeFromQueue(cacheQueue, existingNode);
+        addNodeToFront(cacheQueue, existingNode);
         return;
     }
-    else if(hashtable[key]==NULL)
+
+    if (cacheCurrentSize == cacheMaximumCapacity)
     {
-        if(cacheCapacity==cacheSize)
-        {
-            Node* node1=removeLast(cacheQueue);
-            hashtable[node1->key]=NULL;
-            free(node1);
-            cacheSize--;
-        }
-        Node* node=createNode(key, data);
-        addNode(cacheQueue,node);
-        hashtable[key]=node;
-        cacheSize++;
+        DoublyLinkedNode* leastRecentlyUsedNode = removeLastNode(cacheQueue);
+        deleteFromHashTable(leastRecentlyUsedNode->key);
+        free(leastRecentlyUsedNode);
+        cacheCurrentSize--;
     }
+
+    DoublyLinkedNode* newNode = createDoublyLinkedNode(key, data);
+    addNodeToFront(cacheQueue, newNode);
+    insertIntoHashTable(key, newNode);
+    cacheCurrentSize++;
 }
 
-// Returns data for the key and moves the node to the head (MRU).
-char* get(int key)
+char* getFromCache(int key)
 {
-    if(hashtable[key]==NULL)
-    {
+    DoublyLinkedNode* node = getFromHashTable(key);
+
+    if (node == NULL)
         return "NULL";
-    }
-    Node* node=hashtable[key];
-    removeNode(cacheQueue,node);
-    addNode(cacheQueue,node);
+
+    removeNodeFromQueue(cacheQueue, node);
+    addNodeToFront(cacheQueue, node);
+
     return node->data;
 }
 
-// Reads user input and ensures only valid numeric values are accepted.
-int readIntOnly() 
+//Input Validation Functions
+int readCacheCapacity()
 {
-    char input[100];
-    while(1)
+    char userInput[100];
+
+    while (1)
     {
-        scanf("%s",input);
-        int valid=1;
-        for (int index = 0; input[index] != '\0'; index++)
+        scanf(" %s", userInput);
+        clearInputBuffer();
+
+        int isValidNumber = 1;
+
+        for (int index = 0; userInput[index] != '\0'; index++)
         {
-            if(input[index]<'0' || input[index]>'9')
+            if (!isdigit(userInput[index]))
             {
-                valid=0;
+                isValidNumber = 0;
                 break;
             }
         }
-        if(valid == 0)
+
+        if (!isValidNumber)
         {
-            printf("Invalid.Enter only numbers:");
+            printf("Invalid. Enter only numbers: ");
             continue;
         }
-        int value=atoi(input);
-        if (value<0 || value>MAX) 
+
+        int capacityValue = atoi(userInput);
+        if (capacityValue < 0 || capacityValue > MAX_HASH_SIZE)
         {
-            printf("Out of range.Enter again(0-999):");
+            printf("Out of range (0–999). Enter again: ");
             continue;
         }
-        return value;
+
+        return capacityValue;
     }
+}
+
+int readKeyInput()
+{
+    char userInput[100];
+
+    while (1)
+    {
+        scanf(" %s", userInput);
+        clearInputBuffer();
+
+        int isValidNumber = 1;
+
+        for (int index = 0; userInput[index] != '\0'; index++)
+        {
+            if (!isdigit(userInput[index]))
+            {
+                isValidNumber = 0;
+                break;
+            }
+        }
+
+        if (!isValidNumber)
+        {
+            printf("Invalid. Enter only numbers: ");
+            continue;
+        }
+
+        int keyValue = atoi(userInput);
+
+        if (keyValue <= 0)
+        {
+            printf("Invalid. Enter a number greater than 0: ");
+            continue;
+        }
+
+        return keyValue;
+    }
+}
+
+void readLine(char* buffer, int size)
+{
+    fgets(buffer, size, stdin);
+    buffer[strcspn(buffer, "\n")] = '\0';
+}
+
+int isValidCommandName(const char* command)
+{
+    if (command == NULL || strlen(command) == 0)
+    {
+        return 0;
+    }
+
+    for (int index = 0; command[index] != '\0'; index++)
+    {
+        if (!isalpha(command[index]))
+        {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 int main()
 {
-    int key;
-    char data[50];
-    while(1)
+    int userKeyInput;
+    char userDataInput[50];
+    char userCommand[50];
+
+    while (1)
     {
-        printf("Enter option(\"createCache\"):");
-        char option[20];
-        scanf("%s",option);
-        if(strcmp(option,"createCache")==0)
+        printf("Enter option (createCache): ");
+        readLine(userCommand, sizeof(userCommand));
+
+        if (!isValidCommandName(userCommand))
         {
-            int capacity;
-            printf("Enter capacity:");
-            capacity=readIntOnly();
-            createCache(capacity);
-            break;
-        }    
-        printf("\nInvalid.Create Cache first using \"createCache\"\n");
-    }    
-    while(1)
-    {
-        printf("\nEnter option(put,get,exit):");
-        char option[11];
-        scanf("%s",option);
-        if(strcmp(option,"put")==0)
-        {
-            printf("\nEnter key:");
-            key=readIntOnly();
-            printf("Enter data:");
-            scanf("%s",data);
-            put(key,data);
+            printf("Invalid. Create Cache first using \"createCache\"\n");
+            continue;
         }
-        else if(strcmp(option,"get")==0)
+
+        if (strcmp(userCommand, "createCache") == 0)
         {
-            printf("\nEnter key:");
-            key=readIntOnly();
-            char* value=get(key);
-            printf("%s\n",value);
-        }  
-        else if(strcmp(option,"exit")==0)
+            printf("Enter cache capacity: ");
+            int capacity = readCacheCapacity();
+            initializeCache(capacity);
+            break;
+        }
+
+        printf("Invalid. Create Cache first using \"createCache\"\n");
+    }
+    
+    while (1)
+    {
+        printf("Enter option (put/get/exit): ");
+        readLine(userCommand, sizeof(userCommand));
+
+        if (!isValidCommandName(userCommand))
+        {
+            printf("Invalid\n");
+            continue;
+        }
+
+        if (strcmp(userCommand, "put") == 0)
+        {
+            printf("Enter key: ");
+            userKeyInput = readKeyInput();
+
+            printf("Enter data: ");
+            scanf(" %s", userDataInput);
+            clearInputBuffer();
+
+            putIntoCache(userKeyInput, userDataInput);
+        }
+        else if (strcmp(userCommand, "get") == 0)
+        {
+            printf("Enter key: ");
+            userKeyInput = readKeyInput();
+
+            char* result = getFromCache(userKeyInput);
+            printf("%s\n", result);
+        }
+        else if (strcmp(userCommand, "exit") == 0)
         {
             break;
         }
         else
         {
-            printf("Invalid.Enter valid option");
-        }  
+            printf("Invalid\n");
+        }
     }
+
     return 0;
-    
 }
